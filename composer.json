@@ -1,5 +1,5 @@
 {
-    "name": "cosmos/laravel-monitor",
+    "name": "cosmos-observe/laravel-monitor",
     "description": "Production-safe Redis-first monitoring APIs for Laravel applications.",
     "type": "library",
     "license": "MIT",

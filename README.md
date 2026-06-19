@@ -24,7 +24,7 @@ The official package and dashboard logo is the Laravel Cosmos heartbeat mark sho
 ## Install
 
 ```bash
-composer require cosmos/laravel-monitor
+composer require cosmos-observe/laravel-monitor
 
 php artisan vendor:publish --tag=cosmos-monitor-config
 php artisan vendor:publish --tag=cosmos-monitor-migrations
