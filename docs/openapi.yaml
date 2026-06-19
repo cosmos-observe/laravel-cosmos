@@ -1,0 +1,441 @@
+openapi: 3.0.3
+info:
+  title: Cosmos Laravel Monitor API
+  version: 1.0.0
+servers:
+  - url: /api/cosmos-monitor/v1
+security:
+  - bearerAuth: []
+  - {}
+paths:
+  /health:
+    get:
+      summary: Runtime, Redis, database, queue, and package health
+      responses:
+        "200":
+          $ref: "#/components/responses/EnvelopeResponse"
+  /metrics/summary:
+    get:
+      summary: Stream summary metrics
+      parameters:
+        - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/To"
+        - name: streams
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          $ref: "#/components/responses/EnvelopeResponse"
+  /metrics/timeseries:
+    get:
+      summary: Minute or hour rollup time-series metrics
+      parameters:
+        - name: stream
+          in: query
+          schema:
+            type: string
+            default: requests
+        - name: interval
+          in: query
+          schema:
+            type: string
+            enum: [minute, hour]
+            default: minute
+        - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/To"
+      responses:
+        "200":
+          $ref: "#/components/responses/EnvelopeResponse"
+  /requests:
+    get:
+      summary: HTTP request telemetry
+      parameters:
+        - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/To"
+        - $ref: "#/components/parameters/Status"
+        - $ref: "#/components/parameters/Route"
+        - $ref: "#/components/parameters/Method"
+        - $ref: "#/components/parameters/MinDuration"
+        - $ref: "#/components/parameters/Search"
+        - $ref: "#/components/parameters/Sort"
+        - $ref: "#/components/parameters/Order"
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PerPage"
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/ScanLimit"
+      responses:
+        "200":
+          $ref: "#/components/responses/EnvelopeResponse"
+  /queues:
+    get:
+      summary: Queue depth samples
+      parameters:
+        - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/To"
+        - $ref: "#/components/parameters/Queue"
+        - $ref: "#/components/parameters/Status"
+        - $ref: "#/components/parameters/Search"
+        - $ref: "#/components/parameters/Sort"
+        - $ref: "#/components/parameters/Order"
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PerPage"
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/ScanLimit"
+      responses:
+        "200":
+          $ref: "#/components/responses/EnvelopeResponse"
+  /queues/{queue}/jobs:
+    get:
+      summary: Queue job lifecycle events
+      parameters:
+        - name: queue
+          in: path
+          required: true
+          schema:
+            type: string
+        - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/To"
+        - $ref: "#/components/parameters/Job"
+        - $ref: "#/components/parameters/Status"
+        - $ref: "#/components/parameters/Search"
+        - $ref: "#/components/parameters/Sort"
+        - $ref: "#/components/parameters/Order"
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PerPage"
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/ScanLimit"
+      responses:
+        "200":
+          $ref: "#/components/responses/EnvelopeResponse"
+  /logs:
+    get:
+      summary: Sanitized log telemetry
+      parameters:
+        - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/To"
+        - $ref: "#/components/parameters/Level"
+        - $ref: "#/components/parameters/Search"
+        - $ref: "#/components/parameters/Sort"
+        - $ref: "#/components/parameters/Order"
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PerPage"
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/ScanLimit"
+      responses:
+        "200":
+          $ref: "#/components/responses/EnvelopeResponse"
+  /exceptions:
+    get:
+      summary: Exception telemetry with workflow status overlay
+      parameters:
+        - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/To"
+        - $ref: "#/components/parameters/Hash"
+        - $ref: "#/components/parameters/Search"
+        - $ref: "#/components/parameters/Sort"
+        - $ref: "#/components/parameters/Order"
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PerPage"
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/ScanLimit"
+      responses:
+        "200":
+          $ref: "#/components/responses/EnvelopeResponse"
+  /exceptions/{hash}/status:
+    put:
+      summary: Update exception workflow status
+      parameters:
+        - name: hash
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: [active, resolved, snoozed]
+                snoozed_until:
+                  type: string
+                  format: date-time
+                note:
+                  type: string
+      responses:
+        "200":
+          $ref: "#/components/responses/EnvelopeResponse"
+  /schedules:
+    get:
+      summary: Schedule telemetry and health
+      parameters:
+        - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/To"
+        - $ref: "#/components/parameters/Status"
+        - $ref: "#/components/parameters/Event"
+        - $ref: "#/components/parameters/Search"
+        - $ref: "#/components/parameters/Sort"
+        - $ref: "#/components/parameters/Order"
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PerPage"
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/ScanLimit"
+      responses:
+        "200":
+          $ref: "#/components/responses/EnvelopeResponse"
+  /database/latency:
+    get:
+      summary: Database latency telemetry
+      parameters:
+        - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/To"
+        - $ref: "#/components/parameters/Connection"
+        - $ref: "#/components/parameters/Category"
+        - $ref: "#/components/parameters/MinDuration"
+        - $ref: "#/components/parameters/Search"
+        - $ref: "#/components/parameters/Sort"
+        - $ref: "#/components/parameters/Order"
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PerPage"
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/ScanLimit"
+      responses:
+        "200":
+          $ref: "#/components/responses/EnvelopeResponse"
+  /performance:
+    get:
+      summary: Slow request, slow query, and runtime performance telemetry
+      parameters:
+        - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/To"
+        - $ref: "#/components/parameters/Route"
+        - $ref: "#/components/parameters/Method"
+        - $ref: "#/components/parameters/Category"
+        - $ref: "#/components/parameters/MinDuration"
+        - $ref: "#/components/parameters/Search"
+        - $ref: "#/components/parameters/Sort"
+        - $ref: "#/components/parameters/Order"
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PerPage"
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/ScanLimit"
+      responses:
+        "200":
+          $ref: "#/components/responses/EnvelopeResponse"
+  /cache:
+    get:
+      summary: Cache hit, miss, write, and delete telemetry
+      parameters:
+        - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/To"
+        - $ref: "#/components/parameters/Event"
+        - $ref: "#/components/parameters/Search"
+        - $ref: "#/components/parameters/Sort"
+        - $ref: "#/components/parameters/Order"
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PerPage"
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/ScanLimit"
+      responses:
+        "200":
+          $ref: "#/components/responses/EnvelopeResponse"
+  /settings:
+    get:
+      summary: Effective settings
+      responses:
+        "200":
+          $ref: "#/components/responses/EnvelopeResponse"
+    put:
+      summary: Update supported settings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          $ref: "#/components/responses/EnvelopeResponse"
+  /notifications/test:
+    post:
+      summary: Send a test notification
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                severity:
+                  type: string
+                  enum: [info, warning, error, critical]
+      responses:
+        "200":
+          $ref: "#/components/responses/EnvelopeResponse"
+  /diagnostics/logs/test:
+    post:
+      summary: Protected diagnostic log event
+      responses:
+        "200":
+          $ref: "#/components/responses/EnvelopeResponse"
+  /diagnostics/exceptions/test:
+    post:
+      summary: Protected diagnostic exception event
+      responses:
+        "200":
+          $ref: "#/components/responses/EnvelopeResponse"
+  /diagnostics/database/test-query:
+    post:
+      summary: Protected diagnostic database query
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                mode:
+                  type: string
+                  enum: [fast, slow]
+      responses:
+        "200":
+          $ref: "#/components/responses/EnvelopeResponse"
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+  responses:
+    EnvelopeResponse:
+      description: Standard Cosmos Monitor envelope
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Envelope"
+  parameters:
+    From:
+      name: from
+      in: query
+      schema:
+        type: string
+    To:
+      name: to
+      in: query
+      schema:
+        type: string
+    Level:
+      name: level
+      in: query
+      schema:
+        type: string
+    Status:
+      name: status
+      in: query
+      schema:
+        type: string
+    Queue:
+      name: queue
+      in: query
+      schema:
+        type: string
+    Job:
+      name: job
+      in: query
+      schema:
+        type: string
+    Route:
+      name: route
+      in: query
+      schema:
+        type: string
+    Method:
+      name: method
+      in: query
+      schema:
+        type: string
+    Hash:
+      name: hash
+      in: query
+      schema:
+        type: string
+    Event:
+      name: event
+      in: query
+      schema:
+        type: string
+    Connection:
+      name: connection
+      in: query
+      schema:
+        type: string
+    Category:
+      name: category
+      in: query
+      schema:
+        type: string
+    MinDuration:
+      name: min_duration
+      in: query
+      schema:
+        type: number
+    Search:
+      name: search
+      in: query
+      schema:
+        type: string
+    Sort:
+      name: sort
+      in: query
+      schema:
+        type: string
+        default: timestamp_ms
+    Order:
+      name: order
+      in: query
+      schema:
+        type: string
+        enum: [asc, desc]
+        default: desc
+    Page:
+      name: page
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    PerPage:
+      name: per_page
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        default: 25
+    Cursor:
+      name: cursor
+      in: query
+      schema:
+        type: string
+    ScanLimit:
+      name: scan_limit
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+  schemas:
+    Envelope:
+      type: object
+      required: [data, meta, links]
+      properties:
+        data:
+          nullable: true
+        meta:
+          type: object
+        links:
+          type: object
