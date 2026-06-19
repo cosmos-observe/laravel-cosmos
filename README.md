@@ -4,7 +4,7 @@
 
 # Cosmos Laravel Monitor
 
-Production-safe, Redis-first monitoring APIs for Laravel `10`, `11`, and `12`.
+Production-safe, Redis-first monitoring APIs for Laravel `10`, `11`, `12`, and `13`.
 
 Cosmos Monitor gives you Telescope-style operational visibility without shipping a Blade UI and without storing high-volume telemetry in SQL. Recent telemetry lives in Redis with bounded payloads, secondary indexes, rollups, cursor pagination, sampling, redaction, compression, fail-open writes, and scheduled pruning. Durable low-volume settings and exception workflow state live in the host application's database.
 
@@ -228,7 +228,7 @@ git push origin v1.0.2
 
 ## E2E Test Host
 
-This repository was validated against a separate Laravel 12 app with SQLite app data and local Redis telemetry:
+This repository was validated against a separate Laravel 12 app with SQLite app data and local Redis telemetry, and its Composer constraints support Laravel 13 applications:
 
 ```text
 /Users/mohammad/Documents/laravel-cosmos-monitor-e2e
