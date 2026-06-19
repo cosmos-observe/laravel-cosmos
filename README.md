@@ -208,6 +208,24 @@ Sizing depends on event rate, payload size, indexed fields, and retention. A pra
 - Prefer cursor pagination and indexed filters over deep page numbers.
 - Run `cosmos-monitor:prune` on a schedule and watch the `monitor` stream for prune stats or storage failures.
 
+## CI/CD
+
+GitHub Actions runs Composer validation, PHP linting, and PHPUnit on pushes and pull requests.
+
+Release tags matching `v*` run the release workflow, create or update a GitHub Release, and can notify Packagist when these repository secrets are configured:
+
+```text
+PACKAGIST_USERNAME
+PACKAGIST_TOKEN
+```
+
+Create releases with semantic version tags:
+
+```bash
+git tag v1.0.2
+git push origin v1.0.2
+```
+
 ## E2E Test Host
 
 This repository was validated against a separate Laravel 12 app with SQLite app data and local Redis telemetry:

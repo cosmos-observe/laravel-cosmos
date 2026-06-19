@@ -1,0 +1,81 @@
+name: Package CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: package-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: PHP ${{ matrix.php }} / ${{ matrix.dependencies }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - php: "8.2"
+            dependencies: lowest
+            composer-options: "--prefer-lowest --prefer-stable"
+          - php: "8.2"
+            dependencies: stable
+            composer-options: "--prefer-stable"
+          - php: "8.3"
+            dependencies: stable
+            composer-options: "--prefer-stable"
+          - php: "8.4"
+            dependencies: stable
+            composer-options: "--prefer-stable"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: dom, json, mbstring, redis, tokenizer, xml
+          coverage: none
+          tools: composer:v2
+
+      - name: Read Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Composer downloads
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer-${{ runner.os }}-${{ matrix.php }}-${{ matrix.dependencies }}-${{ hashFiles('composer.json') }}
+          restore-keys: |
+            composer-${{ runner.os }}-${{ matrix.php }}-${{ matrix.dependencies }}-
+            composer-${{ runner.os }}-${{ matrix.php }}-
+
+      - name: Validate Composer metadata
+        run: composer validate --strict
+
+      - name: Install dependencies
+        run: composer update ${{ matrix.composer-options }} --prefer-dist --no-interaction --no-progress
+
+      - name: Validate autoloading
+        run: composer dump-autoload --optimize --strict-psr --no-interaction
+
+      - name: Lint PHP files
+        run: |
+          find config database routes src tests -name '*.php' -print0 \
+            | xargs -0 -n 1 -P 4 php -l
+
+      - name: Run PHPUnit
+        run: vendor/bin/phpunit

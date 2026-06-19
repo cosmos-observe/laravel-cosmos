@@ -1,0 +1,81 @@
+name: Package Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: package-release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: Verify release package
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: dom, json, mbstring, redis, tokenizer, xml
+          coverage: none
+          tools: composer:v2
+
+      - name: Validate Composer metadata
+        run: composer validate --strict
+
+      - name: Install dependencies
+        run: composer update --prefer-stable --prefer-dist --no-interaction --no-progress
+
+      - name: Run tests
+        run: vendor/bin/phpunit
+
+  publish:
+    name: Publish release metadata
+    runs-on: ubuntu-latest
+    needs: verify
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+      PACKAGIST_USERNAME: ${{ secrets.PACKAGIST_USERNAME }}
+      PACKAGIST_TOKEN: ${{ secrets.PACKAGIST_TOKEN }}
+      PACKAGIST_REPOSITORY_URL: https://github.com/cosmos-observe/laravel-cosmos
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Create GitHub release
+        run: |
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release edit "$GITHUB_REF_NAME" \
+              --title "Laravel Cosmos Monitor $GITHUB_REF_NAME" \
+              --notes "Release $GITHUB_REF_NAME for cosmos-observe/laravel-monitor."
+          else
+            gh release create "$GITHUB_REF_NAME" \
+              --verify-tag \
+              --title "Laravel Cosmos Monitor $GITHUB_REF_NAME" \
+              --notes "Release $GITHUB_REF_NAME for cosmos-observe/laravel-monitor."
+          fi
+
+      - name: Trigger Packagist update
+        run: |
+          if [ -z "$PACKAGIST_USERNAME" ] || [ -z "$PACKAGIST_TOKEN" ]; then
+            echo "::warning::PACKAGIST_USERNAME and PACKAGIST_TOKEN are not configured; skipping Packagist update."
+            exit 0
+          fi
+
+          curl -fsS \
+            -X POST \
+            -H "content-type: application/json" \
+            "https://packagist.org/api/update-package?username=${PACKAGIST_USERNAME}&apiToken=${PACKAGIST_TOKEN}" \
+            -d "{\"repository\":{\"url\":\"${PACKAGIST_REPOSITORY_URL}\"}}"
