@@ -2,7 +2,7 @@
 
 namespace Cosmos\LaravelMonitor\Services;
 
-use Cosmos\LaravelMonitor\Storage\RedisTelemetryRepository;
+use Cosmos\LaravelMonitor\Contracts\TelemetryRepository;
 use Cosmos\LaravelMonitor\Support\PayloadSanitizer;
 
 /**
@@ -11,10 +11,10 @@ use Cosmos\LaravelMonitor\Support\PayloadSanitizer;
 class CacheEventRecorder
 {
     /**
-     * Created to share Redis telemetry and sanitization across cache event callbacks.
+     * Created to share high-volume telemetry and sanitization across cache event callbacks.
      */
     public function __construct(
-        protected RedisTelemetryRepository $telemetry,
+        protected TelemetryRepository $telemetry,
         protected PayloadSanitizer $sanitizer
     ) {
     }

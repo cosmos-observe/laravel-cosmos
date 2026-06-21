@@ -5,12 +5,12 @@ namespace Cosmos\LaravelMonitor\Services;
 use Cosmos\LaravelMonitor\Models\MonitorExceptionState;
 
 /**
- * Created to keep dashboard exception workflow state in durable storage while exception events remain Redis-first.
+ * Created to keep dashboard exception workflow state in durable storage while exception events remain ClickHouse-first.
  */
 class ExceptionStateService
 {
     /**
-     * Created to overlay active, resolved, or snoozed state on Redis exception events by hash.
+     * Created to overlay active, resolved, or snoozed state on immutable exception events by hash.
      */
     public function apply(array $events): array
     {

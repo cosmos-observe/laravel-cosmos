@@ -3,7 +3,7 @@
 namespace Cosmos\LaravelMonitor\Support;
 
 /**
- * Created to keep production telemetry safe by redacting sensitive keys and bounding payload size before Redis writes.
+ * Created to keep production telemetry safe by redacting sensitive keys and bounding payload size before telemetry writes.
  */
 class PayloadSanitizer
 {
@@ -81,7 +81,7 @@ class PayloadSanitizer
     }
 
     /**
-     * Created to prevent a single string from exceeding the Redis payload budget.
+     * Created to prevent a single string from exceeding the telemetry payload budget.
      */
     protected function truncateString(string $value): string
     {

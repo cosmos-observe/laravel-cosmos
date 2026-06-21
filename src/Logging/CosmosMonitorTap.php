@@ -22,7 +22,7 @@ class CosmosMonitorTap
         }
 
         $monolog->pushHandler(new CosmosMonitorHandler(
-            app(\Cosmos\LaravelMonitor\Storage\RedisTelemetryRepository::class),
+            app(\Cosmos\LaravelMonitor\Contracts\TelemetryRepository::class),
             app(\Cosmos\LaravelMonitor\Support\PayloadSanitizer::class),
             (array) config('cosmos-monitor.logs.levels', [])
         ));

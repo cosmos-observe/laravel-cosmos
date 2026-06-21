@@ -5,7 +5,7 @@ namespace Cosmos\LaravelMonitor\Models;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * Created to persist operator-facing exception state without mutating Redis exception telemetry.
+ * Created to persist operator-facing exception state without mutating exception telemetry.
  */
 class MonitorExceptionState extends Model
 {

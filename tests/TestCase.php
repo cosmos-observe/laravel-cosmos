@@ -3,26 +3,26 @@
 namespace Cosmos\LaravelMonitor\Tests;
 
 use Cosmos\LaravelMonitor\CosmosMonitorServiceProvider;
-use Cosmos\LaravelMonitor\Storage\RedisTelemetryRepository;
-use Cosmos\LaravelMonitor\Tests\Fakes\FakeRedisFactory;
+use Cosmos\LaravelMonitor\Contracts\TelemetryRepository;
+use Cosmos\LaravelMonitor\Tests\Fakes\FakeTelemetryRepository;
 use Orchestra\Testbench\TestCase as Orchestra;
 
 /**
- * Created to boot the package inside Orchestra Testbench with fake Redis and an in-memory database.
+ * Created to boot the package inside Orchestra Testbench with fake telemetry and an in-memory database.
  */
 abstract class TestCase extends Orchestra
 {
-    protected RedisTelemetryRepository $telemetry;
+    protected TelemetryRepository $telemetry;
 
     /**
-     * Created to bind fake Redis telemetry after the Testbench application is ready.
+     * Created to bind fake telemetry after the Testbench application is ready.
      */
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->telemetry = new RedisTelemetryRepository(new FakeRedisFactory(), (array) config('cosmos-monitor'));
-        $this->app->instance(RedisTelemetryRepository::class, $this->telemetry);
+        $this->telemetry = new FakeTelemetryRepository((array) config('cosmos-monitor'));
+        $this->app->instance(TelemetryRepository::class, $this->telemetry);
     }
 
     /**

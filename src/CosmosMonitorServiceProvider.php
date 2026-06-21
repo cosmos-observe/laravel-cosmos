@@ -3,6 +3,9 @@
 namespace Cosmos\LaravelMonitor;
 
 use Cosmos\LaravelMonitor\Commands\PruneTelemetryCommand;
+use Cosmos\LaravelMonitor\Commands\CheckExternalServicesCommand;
+use Cosmos\LaravelMonitor\Commands\InstallClickHouseSchemaCommand;
+use Cosmos\LaravelMonitor\Commands\SampleStorageCommand;
 use Cosmos\LaravelMonitor\Commands\SampleQueuesCommand;
 use Cosmos\LaravelMonitor\Contracts\TelemetryRepository;
 use Cosmos\LaravelMonitor\Http\Middleware\CaptureRequestMetrics;
@@ -11,14 +14,19 @@ use Cosmos\LaravelMonitor\Services\CacheEventRecorder;
 use Cosmos\LaravelMonitor\Services\DatabaseQueryRecorder;
 use Cosmos\LaravelMonitor\Services\ExceptionRecorder;
 use Cosmos\LaravelMonitor\Services\ExceptionStateService;
+use Cosmos\LaravelMonitor\Services\ExternalHttpRequestRecorder;
 use Cosmos\LaravelMonitor\Services\QueueEventRecorder;
 use Cosmos\LaravelMonitor\Services\ScheduleEventRecorder;
 use Cosmos\LaravelMonitor\Services\SettingsService;
+use Cosmos\LaravelMonitor\Services\ExternalServiceChecker;
+use Cosmos\LaravelMonitor\Services\MailEventRecorder;
+use Cosmos\LaravelMonitor\Services\StorageSnapshotService;
+use Cosmos\LaravelMonitor\Storage\ClickHouse\ClickHouseClient;
+use Cosmos\LaravelMonitor\Storage\ClickHouse\ClickHouseTelemetryRepository;
 use Illuminate\Cache\Events\CacheHit;
 use Illuminate\Cache\Events\CacheMissed;
 use Illuminate\Cache\Events\KeyForgotten;
 use Illuminate\Cache\Events\KeyWritten;
-use Cosmos\LaravelMonitor\Storage\RedisTelemetryRepository;
 use Cosmos\LaravelMonitor\Support\PayloadSanitizer;
 use Illuminate\Console\Events\ScheduledBackgroundTaskFinished;
 use Illuminate\Console\Events\ScheduledTaskFailed;
@@ -31,9 +39,16 @@ use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Queue\Events\JobFailed;
 use Illuminate\Queue\Events\JobProcessed;
 use Illuminate\Queue\Events\JobProcessing;
+use Illuminate\Http\Client\Factory as HttpFactory;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Http\Client\Events\ConnectionFailed;
+use Illuminate\Http\Client\Events\RequestSending;
+use Illuminate\Http\Client\Events\ResponseReceived;
+use Illuminate\Mail\Events\MessageSending;
+use Illuminate\Mail\Events\MessageSent;
+use Symfony\Component\Mailer\Event\FailedMessageEvent;
 
 /**
  * Created to wire the package into Laravel applications without requiring Blade, Telescope, or database-backed telemetry.
@@ -41,7 +56,7 @@ use Illuminate\Support\ServiceProvider;
 class CosmosMonitorServiceProvider extends ServiceProvider
 {
     /**
-     * Created to register shared package services that need the host application's Redis and configuration bindings.
+     * Created to register shared package services that need the host application's configuration bindings.
      */
     public function register(): void
     {
@@ -55,17 +70,24 @@ class CosmosMonitorServiceProvider extends ServiceProvider
         });
 
         /**
-         * Created to bind the Redis repository to Laravel's configured Redis factory lazily.
+         * Created to bind the ClickHouse HTTP client lazily so tests and host apps can override it.
          */
-        $this->app->singleton(RedisTelemetryRepository::class, function ($app): RedisTelemetryRepository {
-            return new RedisTelemetryRepository($app['redis'], (array) config('cosmos-monitor'));
+        $this->app->singleton(ClickHouseClient::class, function ($app): ClickHouseClient {
+            return new ClickHouseClient($app->make(HttpFactory::class), (array) config('cosmos-monitor.clickhouse'));
         });
 
         /**
-         * Created to let host applications depend on the telemetry storage contract instead of the Redis class.
+         * Created to bind the ClickHouse repository as the runtime telemetry backend.
+         */
+        $this->app->singleton(ClickHouseTelemetryRepository::class, function ($app): ClickHouseTelemetryRepository {
+            return new ClickHouseTelemetryRepository($app->make(ClickHouseClient::class), (array) config('cosmos-monitor'));
+        });
+
+        /**
+         * Created to let host applications depend on the telemetry storage contract instead of a concrete backend.
          */
         $this->app->singleton(TelemetryRepository::class, function ($app): TelemetryRepository {
-            return $app->make(RedisTelemetryRepository::class);
+            return $app->make(ClickHouseTelemetryRepository::class);
         });
 
         $this->app->singleton(SettingsService::class);
@@ -75,6 +97,10 @@ class CosmosMonitorServiceProvider extends ServiceProvider
         $this->app->singleton(ExceptionRecorder::class);
         $this->app->singleton(ExceptionStateService::class);
         $this->app->singleton(CacheEventRecorder::class);
+        $this->app->singleton(StorageSnapshotService::class);
+        $this->app->singleton(ExternalServiceChecker::class);
+        $this->app->singleton(ExternalHttpRequestRecorder::class);
+        $this->app->singleton(MailEventRecorder::class);
     }
 
     /**
@@ -100,6 +126,7 @@ class CosmosMonitorServiceProvider extends ServiceProvider
         $this->publishes([
             __DIR__ . '/../database/migrations/2026_01_01_000000_create_cosmos_monitor_settings_table.php' => database_path('migrations/2026_01_01_000000_create_cosmos_monitor_settings_table.php'),
             __DIR__ . '/../database/migrations/2026_01_01_000001_create_cosmos_monitor_exception_states_table.php' => database_path('migrations/2026_01_01_000001_create_cosmos_monitor_exception_states_table.php'),
+            __DIR__ . '/../database/migrations/2026_01_01_000002_create_cosmos_monitor_external_services_table.php' => database_path('migrations/2026_01_01_000002_create_cosmos_monitor_external_services_table.php'),
         ], 'cosmos-monitor-migrations');
 
         $this->publishes([
@@ -129,14 +156,17 @@ class CosmosMonitorServiceProvider extends ServiceProvider
     }
 
     /**
-     * Created to register operational commands for queue sampling and Redis retention pruning.
+     * Created to register operational commands for queue sampling, ClickHouse schema install, and telemetry retention reporting.
      */
     protected function registerCommands(): void
     {
         if ($this->app->runningInConsole()) {
             $this->commands([
                 PruneTelemetryCommand::class,
+                InstallClickHouseSchemaCommand::class,
                 SampleQueuesCommand::class,
+                SampleStorageCommand::class,
+                CheckExternalServicesCommand::class,
             ]);
         }
     }
@@ -156,6 +186,8 @@ class CosmosMonitorServiceProvider extends ServiceProvider
         $this->registerScheduleCollectors();
         $this->registerExceptionCollector();
         $this->registerCacheCollectors();
+        $this->registerExternalRequestCollectors();
+        $this->registerMailCollectors();
     }
 
     /**
@@ -252,7 +284,7 @@ class CosmosMonitorServiceProvider extends ServiceProvider
     }
 
     /**
-     * Created to hook Laravel's exception handler so production exceptions are grouped and stored in Redis.
+     * Created to hook Laravel's exception handler so production exceptions are grouped and stored in telemetry.
      */
     protected function registerExceptionCollector(): void
     {
@@ -268,7 +300,7 @@ class CosmosMonitorServiceProvider extends ServiceProvider
 
         if (method_exists($handler, 'reportable')) {
             /**
-             * Created to forward reportable exceptions to Redis telemetry without replacing Laravel's handler.
+             * Created to forward reportable exceptions to telemetry without replacing Laravel's handler.
              */
             $handler->reportable(function (\Throwable $exception): void {
                 $this->app->make(ExceptionRecorder::class)->record($exception);
@@ -302,6 +334,58 @@ class CosmosMonitorServiceProvider extends ServiceProvider
              */
             Event::listen($eventClass, function (object $event) use ($eventName): void {
                 $this->app->make(CacheEventRecorder::class)->record($event, $eventName);
+            });
+        }
+    }
+
+    /**
+     * Created to monitor outbound Laravel HTTP client traffic while allowing direct Guzzle users to opt into middleware.
+     */
+    protected function registerExternalRequestCollectors(): void
+    {
+        if (! config('cosmos-monitor.capture.external_requests')) {
+            return;
+        }
+
+        $listeners = [
+            RequestSending::class => 'sending',
+            ResponseReceived::class => 'responseReceived',
+            ConnectionFailed::class => 'connectionFailed',
+        ];
+
+        foreach ($listeners as $eventClass => $method) {
+            if (! class_exists($eventClass)) {
+                continue;
+            }
+
+            Event::listen($eventClass, function (object $event) use ($method): void {
+                $this->app->make(ExternalHttpRequestRecorder::class)->{$method}($event);
+            });
+        }
+    }
+
+    /**
+     * Created to monitor mail sending metadata without storing message bodies, attachments, or full recipient addresses.
+     */
+    protected function registerMailCollectors(): void
+    {
+        if (! config('cosmos-monitor.capture.mail')) {
+            return;
+        }
+
+        $listeners = [
+            MessageSending::class => 'sending',
+            MessageSent::class => 'sent',
+            FailedMessageEvent::class => 'failed',
+        ];
+
+        foreach ($listeners as $eventClass => $method) {
+            if (! class_exists($eventClass)) {
+                continue;
+            }
+
+            Event::listen($eventClass, function (object $event) use ($method): void {
+                $this->app->make(MailEventRecorder::class)->{$method}($event);
             });
         }
     }

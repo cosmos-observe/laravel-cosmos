@@ -3,7 +3,7 @@
 namespace Cosmos\LaravelMonitor\Http\Controllers;
 
 use Cosmos\LaravelMonitor\Services\ExceptionStateService;
-use Cosmos\LaravelMonitor\Storage\RedisTelemetryRepository;
+use Cosmos\LaravelMonitor\Contracts\TelemetryRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -15,7 +15,7 @@ class ExceptionTelemetryController extends Controller
     /**
      * Created to list recent exceptions with class, message, hash, and stack preview fields.
      */
-    public function index(Request $request, RedisTelemetryRepository $telemetry, ExceptionStateService $states): JsonResponse
+    public function index(Request $request, TelemetryRepository $telemetry, ExceptionStateService $states): JsonResponse
     {
         $result = $telemetry->listEvents('exceptions', $this->filters($request));
         $result['data'] = $states->apply($result['data'] ?? []);
@@ -24,7 +24,7 @@ class ExceptionTelemetryController extends Controller
     }
 
     /**
-     * Created to update exception workflow state by hash while leaving immutable Redis exception events untouched.
+     * Created to update exception workflow state by hash while leaving immutable immutable exception events untouched.
      */
     public function updateStatus(string $hash, Request $request, ExceptionStateService $states): JsonResponse
     {

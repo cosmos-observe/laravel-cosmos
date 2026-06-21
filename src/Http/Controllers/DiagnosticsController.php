@@ -3,7 +3,7 @@
 namespace Cosmos\LaravelMonitor\Http\Controllers;
 
 use Cosmos\LaravelMonitor\Services\ExceptionRecorder;
-use Cosmos\LaravelMonitor\Storage\RedisTelemetryRepository;
+use Cosmos\LaravelMonitor\Contracts\TelemetryRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -62,7 +62,7 @@ class DiagnosticsController extends Controller
     /**
      * Created to execute a tiny DB probe and optionally record a synthetic slow-query event for dashboard testing.
      */
-    public function databaseTestQuery(Request $request, RedisTelemetryRepository $telemetry): JsonResponse
+    public function databaseTestQuery(Request $request, TelemetryRepository $telemetry): JsonResponse
     {
         $this->abortIfActionsDisabled();
 

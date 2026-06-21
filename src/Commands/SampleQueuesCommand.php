@@ -4,7 +4,7 @@ namespace Cosmos\LaravelMonitor\Commands;
 
 use Cosmos\LaravelMonitor\Services\NotificationService;
 use Cosmos\LaravelMonitor\Services\SettingsService;
-use Cosmos\LaravelMonitor\Storage\RedisTelemetryRepository;
+use Cosmos\LaravelMonitor\Contracts\TelemetryRepository;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Queue\Factory as QueueFactory;
 use Illuminate\Support\Facades\DB;
@@ -22,7 +22,7 @@ class SampleQueuesCommand extends Command
     /**
      * Created to record queue depth and trigger notifications when configured thresholds are exceeded.
      */
-    public function handle(QueueFactory $queues, RedisTelemetryRepository $telemetry, NotificationService $notifications, SettingsService $settings): int
+    public function handle(QueueFactory $queues, TelemetryRepository $telemetry, NotificationService $notifications, SettingsService $settings): int
     {
         $effectiveSettings = $settings->all();
         $telemetry->applySettings($effectiveSettings);

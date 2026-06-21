@@ -2,7 +2,7 @@
 
 namespace Cosmos\LaravelMonitor\Services;
 
-use Cosmos\LaravelMonitor\Storage\RedisTelemetryRepository;
+use Cosmos\LaravelMonitor\Contracts\TelemetryRepository;
 use Cosmos\LaravelMonitor\Support\PayloadSanitizer;
 use Illuminate\Queue\Events\JobFailed;
 use Illuminate\Queue\Events\JobProcessed;
@@ -16,10 +16,10 @@ class QueueEventRecorder
     protected array $startedAt = [];
 
     /**
-     * Created to share Redis telemetry and sanitization across queue lifecycle callbacks.
+     * Created to share high-volume telemetry and sanitization across queue lifecycle callbacks.
      */
     public function __construct(
-        protected RedisTelemetryRepository $telemetry,
+        protected TelemetryRepository $telemetry,
         protected PayloadSanitizer $sanitizer
     ) {
     }

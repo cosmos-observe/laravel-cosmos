@@ -5,7 +5,7 @@ namespace Cosmos\LaravelMonitor\Services;
 use Cosmos\LaravelMonitor\Models\MonitorSetting;
 
 /**
- * Created to manage durable notification, retention, and threshold settings separately from Redis telemetry.
+ * Created to manage durable notification, retention, and threshold settings separately from high-volume telemetry.
  */
 class SettingsService
 {
@@ -65,8 +65,12 @@ class SettingsService
             'thresholds' => config('cosmos-monitor.thresholds'),
             'notifications' => config('cosmos-monitor.notifications'),
             'sampling' => config('cosmos-monitor.sampling'),
+            'capture' => config('cosmos-monitor.capture'),
             'limits' => config('cosmos-monitor.limits'),
             'storage' => config('cosmos-monitor.storage'),
+            'clickhouse' => config('cosmos-monitor.clickhouse'),
+            'storage_monitor' => config('cosmos-monitor.storage_monitor'),
+            'external_services' => config('cosmos-monitor.external_services'),
             'actions' => config('cosmos-monitor.actions'),
         ];
     }
@@ -77,12 +81,16 @@ class SettingsService
     protected function descriptions(): array
     {
         return [
-            'retention' => 'Raw and rollup retention windows for Redis telemetry.',
+            'retention' => 'Legacy raw and rollup retention windows for telemetry.',
             'thresholds' => 'Slow request, slow query, and queue size thresholds.',
-            'notifications' => 'Webhook, mail, and enabled flags for monitor notifications.',
+            'notifications' => 'Webhook, mail, FCM browser tokens, and enabled flags for monitor notifications.',
             'sampling' => 'Sampling rates for high-volume telemetry collectors.',
-            'limits' => 'Bounded query, payload, stream, and prune limits for Redis telemetry.',
+            'capture' => 'Feature flags for runtime telemetry collectors.',
+            'limits' => 'Bounded query, payload, stream, and retention-reporting limits for telemetry.',
             'storage' => 'Fail-open, payload compression, and secondary-index storage controls.',
+            'clickhouse' => 'ClickHouse connection and retention controls for runtime telemetry.',
+            'storage_monitor' => 'Selected filesystem disks and pressure thresholds for storage sampling.',
+            'external_services' => 'Timeout and client defaults for external service health checks.',
             'actions' => 'Disabled-by-default diagnostic action controls.',
         ];
     }

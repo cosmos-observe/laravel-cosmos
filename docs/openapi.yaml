@@ -10,7 +10,7 @@ security:
 paths:
   /health:
     get:
-      summary: Runtime, Redis, database, queue, and package health
+      summary: Runtime, ClickHouse, database, queue, and package health
       responses:
         "200":
           $ref: "#/components/responses/EnvelopeResponse"
@@ -42,6 +42,11 @@ paths:
             type: string
             enum: [minute, hour]
             default: minute
+        - name: breakdown
+          in: query
+          schema:
+            type: string
+            enum: [status, status_family, host, mailer, transport]
         - $ref: "#/components/parameters/From"
         - $ref: "#/components/parameters/To"
       responses:
@@ -244,6 +249,113 @@ paths:
       responses:
         "200":
           $ref: "#/components/responses/EnvelopeResponse"
+  /storage:
+    get:
+      summary: Storage disk snapshots
+      parameters:
+        - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/To"
+        - $ref: "#/components/parameters/Disk"
+        - $ref: "#/components/parameters/Status"
+        - $ref: "#/components/parameters/Search"
+        - $ref: "#/components/parameters/Sort"
+        - $ref: "#/components/parameters/Order"
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PerPage"
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/ScanLimit"
+      responses:
+        "200":
+          $ref: "#/components/responses/EnvelopeResponse"
+  /external-requests:
+    get:
+      summary: Outbound external HTTP request telemetry
+      parameters:
+        - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/To"
+        - $ref: "#/components/parameters/Status"
+        - $ref: "#/components/parameters/StatusFamily"
+        - $ref: "#/components/parameters/Host"
+        - $ref: "#/components/parameters/Source"
+        - $ref: "#/components/parameters/Method"
+        - $ref: "#/components/parameters/MinDuration"
+        - $ref: "#/components/parameters/Search"
+        - $ref: "#/components/parameters/Sort"
+        - $ref: "#/components/parameters/Order"
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PerPage"
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/ScanLimit"
+      responses:
+        "200":
+          $ref: "#/components/responses/EnvelopeResponse"
+  /mail:
+    get:
+      summary: Metadata-only mail send telemetry
+      parameters:
+        - $ref: "#/components/parameters/From"
+        - $ref: "#/components/parameters/To"
+        - $ref: "#/components/parameters/Status"
+        - $ref: "#/components/parameters/Mailer"
+        - $ref: "#/components/parameters/Transport"
+        - $ref: "#/components/parameters/RecipientDomain"
+        - $ref: "#/components/parameters/MinDuration"
+        - $ref: "#/components/parameters/Search"
+        - $ref: "#/components/parameters/Sort"
+        - $ref: "#/components/parameters/Order"
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PerPage"
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/ScanLimit"
+      responses:
+        "200":
+          $ref: "#/components/responses/EnvelopeResponse"
+  /external-services:
+    get:
+      summary: Registered external services with latest check snapshots
+      responses:
+        "200":
+          $ref: "#/components/responses/EnvelopeResponse"
+    post:
+      summary: Register an external service
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExternalServiceWrite"
+      responses:
+        "201":
+          $ref: "#/components/responses/EnvelopeResponse"
+  /external-services/{id}:
+    put:
+      summary: Update an external service
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExternalServiceWrite"
+      responses:
+        "200":
+          $ref: "#/components/responses/EnvelopeResponse"
+    delete:
+      summary: Delete an external service
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          $ref: "#/components/responses/EnvelopeResponse"
+  /external-services/{id}/check:
+    post:
+      summary: Run an immediate external service check
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          $ref: "#/components/responses/EnvelopeResponse"
   /settings:
     get:
       summary: Effective settings
@@ -276,6 +388,37 @@ paths:
                 severity:
                   type: string
                   enum: [info, warning, error, critical]
+      responses:
+        "200":
+          $ref: "#/components/responses/EnvelopeResponse"
+  /notifications/fcm/register:
+    post:
+      summary: Register a Firebase browser token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token]
+              properties:
+                token:
+                  type: string
+      responses:
+        "200":
+          $ref: "#/components/responses/EnvelopeResponse"
+    delete:
+      summary: Remove a Firebase browser token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token]
+              properties:
+                token:
+                  type: string
       responses:
         "200":
           $ref: "#/components/responses/EnvelopeResponse"
@@ -340,6 +483,47 @@ components:
       in: query
       schema:
         type: string
+    StatusFamily:
+      name: status_family
+      in: query
+      schema:
+        type: string
+    Host:
+      name: host
+      in: query
+      schema:
+        type: string
+    Source:
+      name: source
+      in: query
+      schema:
+        type: string
+    Mailer:
+      name: mailer
+      in: query
+      schema:
+        type: string
+    Transport:
+      name: transport
+      in: query
+      schema:
+        type: string
+    RecipientDomain:
+      name: recipient_domain
+      in: query
+      schema:
+        type: string
+    Disk:
+      name: disk
+      in: query
+      schema:
+        type: string
+    Id:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: integer
     Queue:
       name: queue
       in: query
@@ -429,6 +613,18 @@ components:
         type: integer
         minimum: 1
   schemas:
+    ExternalServiceWrite:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 120
+        url:
+          type: string
+          format: uri
+          maxLength: 2048
+        enabled:
+          type: boolean
     Envelope:
       type: object
       required: [data, meta, links]

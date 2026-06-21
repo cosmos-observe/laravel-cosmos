@@ -5,7 +5,7 @@ namespace Cosmos\LaravelMonitor\Models;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * Created to persist low-volume monitor settings in the host database while high-volume telemetry stays in Redis.
+ * Created to persist low-volume monitor settings in the host database while high-volume telemetry stays in ClickHouse.
  */
 class MonitorSetting extends Model
 {

@@ -3,7 +3,7 @@
 namespace Cosmos\LaravelMonitor\Services;
 
 use Cosmos\LaravelMonitor\Events\CosmosMonitorNotificationTriggered;
-use Cosmos\LaravelMonitor\Storage\RedisTelemetryRepository;
+use Cosmos\LaravelMonitor\Contracts\TelemetryRepository;
 use Cosmos\LaravelMonitor\Support\PayloadSanitizer;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
@@ -15,12 +15,13 @@ use Illuminate\Support\Facades\Mail;
 class NotificationService
 {
     /**
-     * Created to combine durable settings, Redis audit telemetry, and payload sanitization for notifications.
+     * Created to combine durable settings, audit telemetry, and payload sanitization for notifications.
      */
     public function __construct(
         protected SettingsService $settings,
-        protected RedisTelemetryRepository $telemetry,
-        protected PayloadSanitizer $sanitizer
+        protected TelemetryRepository $telemetry,
+        protected PayloadSanitizer $sanitizer,
+        protected FirebaseCloudMessagingService $firebase
     ) {
     }
 
@@ -58,6 +59,10 @@ class NotificationService
 
         if (($notifications['enabled'] ?? true) && ! empty($notifications['mail_to'])) {
             $results['mail'] = $this->sendMail((array) $notifications['mail_to'], $payload);
+        }
+
+        if (($notifications['enabled'] ?? true) && ! empty($notifications['fcm_tokens'])) {
+            $results['fcm'] = $this->firebase->send((array) $notifications['fcm_tokens'], $payload, $notifications);
         }
 
         $this->telemetry->recordEvent('notifications', [

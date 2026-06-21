@@ -6,7 +6,7 @@ use Cosmos\LaravelMonitor\Support\PayloadSanitizer;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Created to verify sensitive telemetry fields are redacted before Redis storage.
+ * Created to verify sensitive telemetry fields are redacted before telemetry storage.
  */
 class PayloadSanitizerTest extends TestCase
 {

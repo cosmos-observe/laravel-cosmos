@@ -2,28 +2,30 @@
 
 namespace Cosmos\LaravelMonitor\Http\Controllers;
 
-use Cosmos\LaravelMonitor\Storage\RedisTelemetryRepository;
+use Cosmos\LaravelMonitor\Contracts\TelemetryRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Created to expose package, Redis, and settings-table health to the external monitoring panel.
+ * Created to expose package, ClickHouse, and settings-table health to the external monitoring panel.
  */
 class HealthController extends Controller
 {
     /**
      * Created to return a lightweight health response without reading high-volume telemetry.
      */
-    public function __invoke(RedisTelemetryRepository $telemetry): JsonResponse
+    public function __invoke(TelemetryRepository $telemetry): JsonResponse
     {
-        $redisOk = $telemetry->ping();
+        $storageOk = $telemetry->ping();
         $settingsTable = $this->settingsTableExists();
 
         return $this->envelope([
-            'status' => $redisOk ? 'ok' : 'degraded',
-            'redis' => $redisOk ? 'ok' : 'unavailable',
+            'status' => $storageOk ? 'ok' : 'degraded',
+            'storage_driver' => config('cosmos-monitor.storage_driver', 'clickhouse'),
+            'telemetry_storage' => $storageOk ? 'ok' : 'unavailable',
+            'clickhouse' => $storageOk ? 'ok' : 'unavailable',
             'settings_table' => $settingsTable ? 'ok' : 'missing',
             'database' => $this->databaseHealth(),
             'runtime' => [

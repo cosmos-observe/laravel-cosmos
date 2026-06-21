@@ -2,7 +2,7 @@
 
 namespace Cosmos\LaravelMonitor\Http\Controllers;
 
-use Cosmos\LaravelMonitor\Storage\RedisTelemetryRepository;
+use Cosmos\LaravelMonitor\Contracts\TelemetryRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -14,11 +14,11 @@ class MetricsController extends Controller
     /**
      * Created to return compact counts and latest records for all requested telemetry streams.
      */
-    public function summary(Request $request, RedisTelemetryRepository $telemetry): JsonResponse
+    public function summary(Request $request, TelemetryRepository $telemetry): JsonResponse
     {
         $streams = $request->query('streams')
             ? array_filter(explode(',', (string) $request->query('streams')))
-            : RedisTelemetryRepository::STREAMS;
+            : TelemetryRepository::STREAMS;
 
         return $this->envelope($telemetry->summary($streams, $this->filters($request)));
     }
@@ -26,7 +26,7 @@ class MetricsController extends Controller
     /**
      * Created to return minute or hour rollups for charting metrics in an external panel.
      */
-    public function timeseries(Request $request, RedisTelemetryRepository $telemetry): JsonResponse
+    public function timeseries(Request $request, TelemetryRepository $telemetry): JsonResponse
     {
         $stream = (string) $request->query('stream', 'requests');
         $filters = $this->filters($request, [

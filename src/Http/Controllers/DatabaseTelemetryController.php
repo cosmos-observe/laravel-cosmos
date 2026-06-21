@@ -2,7 +2,7 @@
 
 namespace Cosmos\LaravelMonitor\Http\Controllers;
 
-use Cosmos\LaravelMonitor\Storage\RedisTelemetryRepository;
+use Cosmos\LaravelMonitor\Contracts\TelemetryRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -14,7 +14,7 @@ class DatabaseTelemetryController extends Controller
     /**
      * Created to list retained slow database queries and latency events.
      */
-    public function latency(Request $request, RedisTelemetryRepository $telemetry): JsonResponse
+    public function latency(Request $request, TelemetryRepository $telemetry): JsonResponse
     {
         return $this->telemetryEnvelope($telemetry->listEvents('database', $this->filters($request)));
     }

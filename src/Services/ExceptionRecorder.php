@@ -2,19 +2,19 @@
 
 namespace Cosmos\LaravelMonitor\Services;
 
-use Cosmos\LaravelMonitor\Storage\RedisTelemetryRepository;
+use Cosmos\LaravelMonitor\Contracts\TelemetryRepository;
 use Cosmos\LaravelMonitor\Support\PayloadSanitizer;
 
 /**
- * Created to group and retain production exceptions in Redis without requiring Telescope.
+ * Created to group and retain production exceptions without requiring Telescope.
  */
 class ExceptionRecorder
 {
     /**
-     * Created to share Redis telemetry and sanitization with Laravel's exception hook.
+     * Created to share high-volume telemetry and sanitization with Laravel's exception hook.
      */
     public function __construct(
-        protected RedisTelemetryRepository $telemetry,
+        protected TelemetryRepository $telemetry,
         protected PayloadSanitizer $sanitizer
     ) {
     }

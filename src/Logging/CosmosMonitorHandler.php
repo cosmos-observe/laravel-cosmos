@@ -2,14 +2,14 @@
 
 namespace Cosmos\LaravelMonitor\Logging;
 
-use Cosmos\LaravelMonitor\Storage\RedisTelemetryRepository;
+use Cosmos\LaravelMonitor\Contracts\TelemetryRepository;
 use Cosmos\LaravelMonitor\Support\PayloadSanitizer;
 use Monolog\Handler\AbstractProcessingHandler;
 use Monolog\Level;
 use Monolog\LogRecord;
 
 /**
- * Created to let Laravel logging channels write selected Monolog records into Redis telemetry.
+ * Created to let Laravel logging channels write selected Monolog records into telemetry.
  */
 class CosmosMonitorHandler extends AbstractProcessingHandler
 {
@@ -17,7 +17,7 @@ class CosmosMonitorHandler extends AbstractProcessingHandler
      * Created to configure log level filtering separately from Monolog's channel level.
      */
     public function __construct(
-        protected RedisTelemetryRepository $telemetry,
+        protected TelemetryRepository $telemetry,
         protected PayloadSanitizer $sanitizer,
         protected array $levels = [],
         bool $bubble = true

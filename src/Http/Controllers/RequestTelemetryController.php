@@ -2,7 +2,7 @@
 
 namespace Cosmos\LaravelMonitor\Http\Controllers;
 
-use Cosmos\LaravelMonitor\Storage\RedisTelemetryRepository;
+use Cosmos\LaravelMonitor\Contracts\TelemetryRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -14,7 +14,7 @@ class RequestTelemetryController extends Controller
     /**
      * Created to list recent request metrics for the monitoring panel.
      */
-    public function index(Request $request, RedisTelemetryRepository $telemetry): JsonResponse
+    public function index(Request $request, TelemetryRepository $telemetry): JsonResponse
     {
         return $this->telemetryEnvelope($telemetry->listEvents('requests', $this->filters($request)));
     }

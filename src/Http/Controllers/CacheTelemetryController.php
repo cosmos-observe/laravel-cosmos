@@ -2,7 +2,7 @@
 
 namespace Cosmos\LaravelMonitor\Http\Controllers;
 
-use Cosmos\LaravelMonitor\Storage\RedisTelemetryRepository;
+use Cosmos\LaravelMonitor\Contracts\TelemetryRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -14,7 +14,7 @@ class CacheTelemetryController extends Controller
     /**
      * Created to list recent cache events with shared filtering, cursor, and pagination support.
      */
-    public function index(Request $request, RedisTelemetryRepository $telemetry): JsonResponse
+    public function index(Request $request, TelemetryRepository $telemetry): JsonResponse
     {
         return $this->telemetryEnvelope($telemetry->listEvents('cache', $this->filters($request)));
     }

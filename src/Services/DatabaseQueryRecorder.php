@@ -2,7 +2,7 @@
 
 namespace Cosmos\LaravelMonitor\Services;
 
-use Cosmos\LaravelMonitor\Storage\RedisTelemetryRepository;
+use Cosmos\LaravelMonitor\Contracts\TelemetryRepository;
 use Cosmos\LaravelMonitor\Support\PayloadSanitizer;
 use Illuminate\Database\Events\QueryExecuted;
 
@@ -12,10 +12,10 @@ use Illuminate\Database\Events\QueryExecuted;
 class DatabaseQueryRecorder
 {
     /**
-     * Created to share Redis telemetry and sanitization with the database listener.
+     * Created to share high-volume telemetry and sanitization with the database listener.
      */
     public function __construct(
-        protected RedisTelemetryRepository $telemetry,
+        protected TelemetryRepository $telemetry,
         protected PayloadSanitizer $sanitizer
     ) {
     }

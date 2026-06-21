@@ -3,7 +3,7 @@
 namespace Cosmos\LaravelMonitor\Http\Middleware;
 
 use Closure;
-use Cosmos\LaravelMonitor\Storage\RedisTelemetryRepository;
+use Cosmos\LaravelMonitor\Contracts\TelemetryRepository;
 use Cosmos\LaravelMonitor\Support\PayloadSanitizer;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -14,10 +14,10 @@ use Symfony\Component\HttpFoundation\Response;
 class CaptureRequestMetrics
 {
     /**
-     * Created to record request telemetry through the shared Redis repository with payload redaction.
+     * Created to record request telemetry through the shared telemetry repository with payload redaction.
      */
     public function __construct(
-        protected RedisTelemetryRepository $telemetry,
+        protected TelemetryRepository $telemetry,
         protected PayloadSanitizer $sanitizer
     ) {
     }
